@@ -3,47 +3,50 @@ package com.proyectomvc.autos.controller;
 import com.proyectomvc.autos.model.Auto;
 import com.proyectomvc.autos.repository.AutoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
-@Controller
-@RequestMapping("/autos")
-
+@RestController
+@RequestMapping("/api/autos")
+@CrossOrigin(origins = "http://localhost:3000") 
 public class AutoController {
     @Autowired
     private AutoRepository autoRepository;
 
     @GetMapping
-    public String listarAutos(Model model) {
-        model.addAttribute("autos", autoRepository.findAll());
-        return "lista-autos";
+    public ResponseEntity<List<Auto>> listarAutos() {
+        List<Auto> autos = autoRepository.findAll();
+        return ResponseEntity.ok(autos);
     }
 
-    @GetMapping("/nuevo")
-    public String formularioNuevoAuto(Model model) {
-        model.addAttribute("auto", new Auto());
-        return "formulario-auto";
-    }
-
-    @PostMapping("/guardar")
-    public String guardarAuto(@ModelAttribute Auto auto) {
-        autoRepository.save(auto);
-        return "redirect:/autos";
-    }
-
-    @GetMapping("/editar/{id}")
-    public String formularioEditarAuto(@PathVariable Long id, Model model) {
+    @GetMapping("/{id}")
+    public ResponseEntity<Auto> obtenerAuto(@PathVariable Long id) {
         Auto auto = autoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("ID de auto inválido:" + id));
-        model.addAttribute("auto", auto);
-        return "formulario-auto";
+        return ResponseEntity.ok(auto);
     }
 
-    @GetMapping("/eliminar/{id}")
-    public String eliminarAuto(@PathVariable Long id) {
+    @PostMapping
+    public ResponseEntity<Auto> guardarAuto(@RequestBody Auto auto) {
+        Auto autoGuardado = autoRepository.save(auto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(autoGuardado);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Auto> actualizarAuto(@PathVariable Long id, @RequestBody Auto auto) {
+        if (!autoRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        auto.setId(id);
+        Auto autoActualizado = autoRepository.save(auto);
+        return ResponseEntity.ok(autoActualizado);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarAuto(@PathVariable Long id) {
         autoRepository.deleteById(id);
-        return "redirect:/autos";
+        return ResponseEntity.noContent().build();
     }
-
 }
